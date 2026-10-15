@@ -407,15 +407,23 @@ func (r *Runner) Detect(ctx context.Context) (*ProgrammerInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	info := &ProgrammerInfo{Raw: strings.TrimSpace(res.Output)}
+	out := res.Output
+	// -k only names the model; -V also reports firmware and its warnings.
+	if v, err := r.Simple(ctx, "-V"); err == nil {
+		out += v.Output
+	}
+	info := &ProgrammerInfo{Raw: strings.TrimSpace(out)}
+	// The model comes only from -k: -V also lists "T76: 34607 devices" etc.
 	for _, l := range strings.Split(res.Output, "\n") {
-		l = strings.TrimSpace(l)
-		if k, v, ok := strings.Cut(l, ":"); ok && !strings.Contains(k, " ") {
+		if k, v, ok := strings.Cut(strings.TrimSpace(l), ":"); ok {
 			switch strings.ToLower(k) {
 			case "tl866a", "tl866ii", "t48", "t56", "t76":
 				info.Found, info.Model, info.Label = true, strings.ToLower(k), strings.TrimSpace(v)
 			}
 		}
+	}
+	for _, l := range strings.Split(out, "\n") {
+		l = strings.TrimSpace(l)
 		switch {
 		case strings.HasPrefix(l, "Found ") && info.Firmware == "":
 			info.Firmware = strings.TrimPrefix(l, "Found ")

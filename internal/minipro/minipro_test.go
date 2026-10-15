@@ -68,8 +68,10 @@ func TestRunProgressAndPrompt(t *testing.T) {
 func TestDetectParsing(t *testing.T) {
 	dir := t.TempDir()
 	fake := filepath.Join(dir, "minipro")
-	out := "Found T48 00.1.38 (0x126)\nWarning: T48 support is not yet complete!\nWarning: Firmware is out of date.\n  Expected  01.1.39 (0x127)\n  Found     00.1.38 (0x126)\nDevice code: 5AB28017\nt48: T48\n"
-	os.WriteFile(fake, []byte("#!/bin/sh\nprintf '"+strings.ReplaceAll(out, "\n", "\\n")+"' >&2\n"), 0o755)
+	ver := "Found T48 00.1.38 (0x126)\nWarning: T48 support is not yet complete!\nWarning: Firmware is out of date.\n  Expected  01.1.39 (0x127)\n  Found     00.1.38 (0x126)\nDevice code: 5AB28017\nminipro version 0.7.4\nT48:\t\t29739 devices, 0 custom\nT76:\t\t34607 devices, 0 custom\n"
+	script := "#!/bin/sh\nif [ \"$1\" = -k ]; then echo 't48: T48' >&2; else printf '" +
+		strings.ReplaceAll(ver, "\n", "\\n") + "' >&2; fi\n"
+	os.WriteFile(fake, []byte(script), 0o755)
 	info, err := (&Runner{Binary: fake}).Detect(context.Background())
 	if err != nil {
 		t.Fatal(err)

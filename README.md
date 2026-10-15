@@ -6,6 +6,8 @@ It is written in Go with [Fyne](https://fyne.io) and runs the open source
 vendored source and embedded in the same binary. Every chip operation is a `minipro` run, and
 the exact command is shown in the log.
 
+![LinGecu main window with the T48 programmer and an A25L05PT SPI flash selected](docs/LinGecuGUI.png)
+
 ## Build
 
 The repository contains the [minipro](https://gitlab.com/DavidGriffith/minipro) source in
