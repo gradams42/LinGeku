@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=LinGecu
+GenericName=Chip Programmer
+Comment=Program EEPROMs, flash, MCUs and PLDs with XGecu TL866/T48/T56/T76 programmers
+Exec=lingecu
+Icon=media-flash
+Terminal=false
+Categories=Development;Electronics;
+Keywords=eeprom;flash;programmer;minipro;xgecu;tl866;t48;

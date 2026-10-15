@@ -1,0 +1,56 @@
+minipro (0.7.4) unstable; urgency=medium
+
+  * Debian Version Update
+  * Allow setting of T48 clock speed.
+  * T48 bitbang improvements.
+  * Allow different voltages for custom protocols on T48.
+  * Lots of other T48 support items.
+  * Fixed lint warnings.
+  * Fixed C23 language standard complaints.
+  * Removed TL866A 32 pin logic restriction.
+  * Fixed segfault when copying chip with only one name.
+
+ -- David Griffith <dave@661.org>  Sat, 2 Aug 2025 12:00:00 +0200
+
+minipro (0.7.3) unstable; urgency=medium
+
+  * Debian Version Update
+  * Added a script to download an official Xgecu package and distill the individual algorithm files to a single "algorithm.xml" file for usewith the T56 programmer.
+  * Added firmware update capability for the T48 and T56 programmers.
+  * Added OVC test and check for T48.
+  * Much improved T48 and T56 support.
+  * Corrected wrong code_memory_size for some old PROMs.
+  * Check for hardware fault in TL866A/CS about pin 20 GND driver.
+  * Fixed AVR fuse parsing.
+  * Fixed bad invocation of curl.
+  * Clarified and expanded build instructions.
+
+ -- David Griffith <dave@661.org>  Sun, 13 Apr 2025 12:00:00 +0200
+
+minipro (0.7.2) unstable; urgency=medium
+
+  * Debian Version Update
+  * BUG FIXES
+
+ -- David Griffith <dave@661.org>  Sat, 21 Sep 2024 12:00:00 +0200
+
+minipro (0.7.1) unstable; urgency=medium
+
+  * Debian Version Update
+  * Added D2364C custom chip
+  * Allow more than 256 vectors to be used.
+
+ -- David Griffith <dave@661.org>  Wed, 3 Sep 2024 09:00:00 +0200
+
+minipro (0.4-1) unstable; urgency=medium
+
+  * Updated to support TL866II+
+  * Significant enhancements in usablity and functionality.
+
+ -- David Griffith <dave@661.org>  Sun, 14 Jul 2019 01:15:14 -0700
+
+minipro (0.1-1) unstable; urgency=low
+
+  * Initial release
+
+ -- minoru <minoru@unknown>  Tue, 25 Feb 2014 10:03:07 +0700

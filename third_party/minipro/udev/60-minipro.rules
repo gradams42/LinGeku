@@ -1,0 +1,32 @@
+##
+## This file is part of Minipro project.
+##
+## Minipro is free software; you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation; either version 3 of the License, or
+## (at your option) any later version.
+##
+## Minipro is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+
+# These rules grant permission by
+# - tagging with "uaccess" for newer systems using systemd-logind
+# - adding the device to the group "plugdev" for older systems,
+#   the user must be member of this group.
+#   Remove the part ', MODE="660", GROUP="plugdev"' if you do not need it.
+
+ACTION!="add|change", GOTO="minipro_rules_end"
+SUBSYSTEM!="usb", GOTO="minipro_rules_end"
+
+# TL866A/CS
+ATTRS{idVendor}=="04d8", ATTRS{idProduct}=="e11c", TAG+="uaccess", MODE="660", GROUP="plugdev"
+
+# TL866II+, T48, T56
+ATTRS{idVendor}=="a466", ATTRS{idProduct}=="0a53", TAG+="uaccess", MODE="660", GROUP="plugdev"
+
+# T76
+ATTRS{idVendor}=="a466", ATTRS{idProduct}=="1a86", TAG+="uaccess", MODE="660", GROUP="plugdev"
+
+LABEL="minipro_rules_end"
