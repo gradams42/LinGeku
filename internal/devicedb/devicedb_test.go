@@ -1,6 +1,7 @@
 package devicedb
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -33,6 +34,15 @@ func TestLoadRealDatabase(t *testing.T) {
 		t.Fatalf("ATMEGA328P config missing: %+v", m)
 	}
 	t.Logf("%s id=%s pkg=%s cfg=%+v", m.Name, m.ChipIDString(), m.Package(), db.Config(m))
+	spi := db.Find(T48, "A25L05PT@DIP8")
+	roles := db.PinRoles(spi)
+	want := []PinRole{PinTested, PinTested, PinTested, PinGround, PinTested, PinTested, PinTested, PinTested}
+	if fmt.Sprint(roles) != fmt.Sprint(want) {
+		t.Fatalf("A25L05PT pin roles %v, want %v", roles, want)
+	}
+	if ZIFToDevicePin(37, 8) != 5 || DevicePinToZIF(5, 8) != 37 || ZIFToDevicePin(20, 8) != 0 {
+		t.Fatal("ZIF mapping")
+	}
 	if len(db.Logic) == 0 || db.Find(T48, "7404") == nil {
 		t.Fatal("logic ICs missing")
 	}

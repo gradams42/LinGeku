@@ -19,4 +19,15 @@ mkdir -p "$DEST"
 # git archive applies minipro's export-subst so its Makefile carries the version.
 git -C "$TMP/src" archive HEAD | tar -x -C "$DEST"
 printf 'repository: %s\ncommit: %s\ndate: %s\n' "$REPO" "$COMMIT" "$DATE" > "$DEST/UPSTREAM"
+
+# Re-apply LinGecu's local minipro changes.
+for p in "$ROOT"/third_party/patches/*.patch; do
+  [ -e "$p" ] || continue
+  if patch -d "$DEST" -p1 --forward --quiet < "$p"; then
+    echo "applied $(basename "$p")"
+    echo "patch: $(basename "$p")" >> "$DEST/UPSTREAM"
+  else
+    echo "WARNING: $(basename "$p") no longer applies; it may have been merged upstream" >&2
+  fi
+done
 echo "third_party/minipro updated to $COMMIT ($DATE)"

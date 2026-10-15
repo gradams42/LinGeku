@@ -416,6 +416,7 @@ minipro_handle_t *minipro_open(uint8_t verbose)
 		handle->minipro_set_zif_direction = t48_set_zif_direction;
 		handle->minipro_set_zif_state = t48_set_zif_state;
 		handle->minipro_get_zif_state = t48_get_zif_state;
+		handle->minipro_pin_test = t48_pin_test;
 		handle->minipro_set_pin_drivers = t48_set_pin_drivers;
 		handle->minipro_set_voltages = t48_set_voltages;
 		handle->minipro_hardware_check = t48_hardware_check;

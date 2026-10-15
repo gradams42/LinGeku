@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -55,8 +56,10 @@ type App struct {
 	opts                                  *optionsPanel
 	cfg                                   *configPanel
 	logic                                 *logicPanel
+	pins                                  *pinPanel
 	tabs                                  *container.AppTabs
 	tabCode, tabData, tabConfig, tabLogic *container.TabItem
+	tabPins                               *container.TabItem
 
 	infoGrid    *widget.Form
 	infoLabels  map[string]*widget.Label
@@ -273,12 +276,14 @@ func (a *App) build() {
 	a.opts = newOptionsPanel(a)
 	a.cfg = newConfigPanel(a)
 	a.logic = newLogicPanel(a)
+	a.pins = newPinPanel(a)
 
 	a.tabCode = container.NewTabItemWithIcon("Code Memory", theme.FileIcon(), a.codeHolder)
 	a.tabData = container.NewTabItemWithIcon("Data Memory (EEPROM)", theme.StorageIcon(), a.dataEd)
 	a.tabConfig = container.NewTabItemWithIcon("Config / Fuses", theme.SettingsIcon(), a.cfg.content)
 	a.tabLogic = container.NewTabItemWithIcon("Logic IC Test", theme.ComputerIcon(), a.logic.content)
-	a.tabs = container.NewAppTabs(a.tabCode, a.tabData, a.tabConfig, a.tabLogic)
+	a.tabPins = container.NewTabItemWithIcon("ZIF Socket / Pins", theme.RadioButtonCheckedIcon(), a.pins.content)
+	a.tabs = container.NewAppTabs(a.tabCode, a.tabData, a.tabConfig, a.tabLogic, a.tabPins)
 
 	left := container.NewVScroll(container.NewVBox(a.devicePanel(), widget.NewSeparator(), a.opts.content))
 	left.SetMinSize(fyne.NewSize(330, 0))
@@ -477,6 +482,7 @@ func (a *App) refreshDevice() {
 		a.opts.refreshForDevice()
 		a.cfg.refreshForDevice()
 		a.logic.refreshForDevice()
+		a.pins.refreshForDevice()
 		return
 	}
 	a.devTitle.SetText(d.Name)
@@ -533,6 +539,7 @@ func (a *App) refreshDevice() {
 	a.opts.refreshForDevice()
 	a.cfg.refreshForDevice()
 	a.logic.refreshForDevice()
+	a.pins.refreshForDevice()
 	a.scheduleChecksum()
 }
 
@@ -646,6 +653,10 @@ func (a *App) job(title string, fn func(ctx context.Context, run runFunc) error)
 					}
 				})
 			}, a.prompt)
+			if res != nil && slices.Contains(args, "-z") {
+				out := res.Output
+				fyne.Do(func() { a.pins.applyResult(out) })
+			}
 			if err != nil {
 				return res, err
 			}

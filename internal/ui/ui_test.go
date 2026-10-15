@@ -31,12 +31,20 @@ while [ $# -gt 0 ]; do
     -b) act=blank ;;
     -E) [ -z "$act" ] && act=erase ;;
     -T) act=logic ;;
+    -z) pincheck=1 ;;
     -V) echo "minipro version 0.7.4     A free and open TL866 series programmer" >&2; echo "Share dir: $FAKE_DIR" >&2; exit 0 ;;
     -k) echo "t48: T48" >&2; exit 0 ;;
   esac
   shift
 done
 echo "Found T48 00.1.31 (0x11f)" >&2
+if [ -n "$pincheck" ]; then
+  if [ -f "$FAKE_DIR/badpins" ]; then
+    for p in $(cat "$FAKE_DIR/badpins"); do echo "Bad contact on pin:$p" >&2; done
+    exit 1
+  fi
+  echo "Pin test passed." >&2
+fi
 case "$act" in
   read)
     printf '\r\033[KReading %s...  50%%' "$page" >&2
@@ -192,6 +200,37 @@ func TestEndToEnd(t *testing.T) {
 	if !strings.Contains(a.logic.result.Text, "PASS") {
 		t.Fatalf("logic result %q\n%s", a.logic.result.Text, logText(a))
 	}
+
+	// Pin contact check: a bad pin aborts the read and shows in the socket view.
+	a.selectDevice(db.Find(devicedb.T48, "A25L05PT@DIP8"))
+	if a.opts.pinCheck.Disabled() {
+		t.Fatal("pin check should be available for A25L05PT on a T48")
+	}
+	a.opts.pinCheck.SetChecked(true)
+	os.WriteFile(filepath.Join(dir, "badpins"), []byte("3 6"), 0o644)
+	a.doRead()
+	waitIdle(t, a)
+	z := a.pins.socket.pins
+	// DIP8 in the ZIF: pins 1-4 -> ZIF 1-4, pins 5-8 -> ZIF 37-40.
+	if z[2] != pinBad || z[37] != pinBad || z[0] != pinGood || z[3] != pinGround || z[39] != pinGood {
+		t.Fatalf("socket states %v\n%s", z, logText(a))
+	}
+	if !strings.Contains(a.pins.status.Text, "3, 6") || a.tabs.Selected() != a.tabPins {
+		t.Fatalf("pin status %q", a.pins.status.Text)
+	}
+	os.Remove(filepath.Join(dir, "badpins"))
+	a.doPinCheck()
+	waitIdle(t, a)
+	if a.pins.socket.pins[2] != pinGood || !strings.Contains(a.pins.status.Text, "All 7 tested pins") {
+		t.Fatalf("after reseat: %v %q", a.pins.socket.pins, a.pins.status.Text)
+	}
+	// Not offered where minipro can't test (T76) and never passed as -z.
+	a.setProgrammer(devicedb.T76)
+	a.selectDevice(db.Find(devicedb.T76, "A25L05PT@DIP8"))
+	if !a.opts.pinCheck.Disabled() || a.opts.options().PinCheck {
+		t.Fatal("pin check must be disabled on the T76")
+	}
+	a.setProgrammer(devicedb.T48)
 
 	// Project round trip.
 	a.selectDevice(db.Find(devicedb.T48, "AT28C256"))

@@ -1382,6 +1382,53 @@ int t48_get_zif_state(minipro_handle_t *handle, uint8_t *zif)
 	return EXIT_SUCCESS;
 }
 
+/*
+ * Bad pin contact test (same principle as the TL866II+ version).
+ * All ZIF pins become inputs with pull-down resistors and the chip's GND
+ * pin(s) are driven high. Every chip pin that touches the socket is then
+ * pulled high through the chip's internal protection diodes, while a pin
+ * without contact stays low.
+ */
+int t48_pin_test(minipro_handle_t *handle, pin_map_t *map)
+{
+	int d_pins = handle->device->package_details.pin_count;
+	int x_pin = d_pins / 2;
+	int pno = 40 - d_pins;
+	uint8_t zif[T48_NPINS];
+	uint8_t msg[8];
+
+	if (t48_reset_state(handle) || t48_set_input_and_pulldown(handle))
+		return EXIT_FAILURE;
+
+	for (size_t i = 0; i < map->gnd_count; i++) {
+		memset(msg, 0, sizeof(msg));
+		msg[0] = T48_SET_OUT;
+		msg[1] = 1;
+		msg[4] = map->gnd_table[i] - 1;
+		if (msg_send(handle->usb_handle, msg, sizeof(msg)))
+			return EXIT_FAILURE;
+	}
+	usleep(2000); /* let the pins settle */
+
+	int err = t48_get_zif_state(handle, zif);
+	if (t48_reset_state(handle) || t48_end_transaction(handle) || err)
+		return EXIT_FAILURE;
+
+	int ret = EXIT_SUCCESS;
+	for (size_t i = 0; i < map->mask_count; i++) {
+		/* map programmer pin# to device pin# */
+		int p_pin = map->mask[i];
+		int d_pin = p_pin > x_pin ? p_pin - pno : p_pin;
+		if (!zif[p_pin - 1]) {
+			fprintf(stderr, "Bad contact on pin:%u\n", d_pin);
+			ret = EXIT_FAILURE;
+		}
+	}
+	if (!ret)
+		fprintf(stderr, "Pin test passed.\n");
+	return ret;
+}
+
 int t48_screen_voltages(minipro_handle_t *handle) {
 	float voltages[4];
 	for(int i=0;i<64;i++) {

@@ -392,17 +392,6 @@ func (a *App) chooseDeviceDialog(title string, devs []*devicedb.Device) {
 	dlg.Show()
 }
 
-func (a *App) doPinCheck() {
-	if !a.requireDevice() {
-		return
-	}
-	o := a.opts.options()
-	a.job("Pin contact check", func(_ context.Context, run runFunc) error {
-		_, err := run(o.Args(minipro.ActPinCheck, ""))
-		return err
-	})
-}
-
 var autodetectIDRe = regexp.MustCompile(`ID:\s*(0x[0-9A-Fa-f]+)`)
 
 func (a *App) doSPIAutodetect(pins int) {

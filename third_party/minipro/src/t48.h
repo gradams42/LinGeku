@@ -48,6 +48,7 @@ int t48_reset_state(minipro_handle_t *handle);
 int t48_set_zif_direction(minipro_handle_t *handle, uint8_t *zif);
 int t48_set_zif_state(minipro_handle_t *handle, uint8_t *zif);
 int t48_get_zif_state(minipro_handle_t *handle, uint8_t *zif);
+int t48_pin_test(minipro_handle_t *handle, pin_map_t *map);
 int t48_set_pin_drivers(minipro_handle_t *handle, pin_driver_t *pins);
 int t48_set_voltages(minipro_handle_t *handle, uint8_t vcc, uint8_t vpp);
 

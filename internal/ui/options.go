@@ -51,14 +51,19 @@ func newOptionsPanel(a *App) *optionsPanel {
 	p.blankFirst = check("Blank check before programming", "blankFirst", false)
 	p.checkID = check("Check chip ID", "checkID", true)
 	p.ignoreID = check("Continue on ID mismatch", "ignoreID", false)
-	p.pinCheck = check("Pin contact check", "pinCheck", false)
+	p.pinCheck = check("Pin contact check before each operation", "pinCheck", false)
 	p.unprotect = check("Disable write protection before", "unprotect", false)
 	p.protect = check("Enable write protection after", "protect", false)
 	p.skipBlank = check("Skip writing blank (0xFF) blocks", "skipBlank", false)
 
 	p.sizeMode = widget.NewSelect([]string{"Error", "Warn only", "Ignore"}, func(s string) { a.prefs.SetString("opt.sizeMode", s) })
 	p.sizeMode.SetSelected(a.prefs.StringWithFallback("opt.sizeMode", "Warn only"))
-	p.icsp = widget.NewSelect([]string{"Off (ZIF socket)", "ICSP, programmer supplies VCC", "ICSP, target powered"}, nil)
+	p.icsp = widget.NewSelect([]string{"Off (ZIF socket)", "ICSP, programmer supplies VCC", "ICSP, target powered"}, func(string) {
+		if a.pins != nil {
+			a.pins.refreshForDevice()
+			p.refreshPinCheck()
+		}
+	})
 	p.icsp.SetSelectedIndex(0)
 
 	p.vpp = widget.NewSelect(nil, nil)
@@ -126,6 +131,7 @@ func (p *optionsPanel) refreshForDevice() {
 	if p.icsp.Disabled() {
 		p.icsp.SetSelectedIndex(0)
 	}
+	p.refreshPinCheck()
 
 	// Rebuild the voltage section with the values valid for this programmer.
 	var vppVals []string
@@ -224,7 +230,7 @@ func (p *optionsPanel) options() minipro.Options {
 		SkipVerify:    !p.verify.Checked,
 		SkipID:        !p.checkID.Checked && !p.checkID.Disabled(),
 		NoIDError:     p.ignoreID.Checked && !p.ignoreID.Disabled(),
-		PinCheck:      p.pinCheck.Checked,
+		PinCheck:      p.pinCheck.Checked && !p.pinCheck.Disabled(),
 		Unprotect:     p.unprotect.Checked && !p.unprotect.Disabled(),
 		Protect:       p.protect.Checked && !p.protect.Disabled(),
 		SkipBlank:     p.skipBlank.Checked,
@@ -250,4 +256,14 @@ func (p *optionsPanel) options() minipro.Options {
 		}
 	}
 	return o
+}
+
+// refreshPinCheck enables the pin check option only where minipro can run
+// it; passing -z otherwise would make minipro abort the operation.
+func (p *optionsPanel) refreshPinCheck() {
+	if ok, _ := p.a.pinCheckSupport(); ok {
+		p.pinCheck.Enable()
+	} else {
+		p.pinCheck.Disable()
+	}
 }

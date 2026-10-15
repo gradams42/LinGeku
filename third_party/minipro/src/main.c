@@ -478,9 +478,12 @@ void spi_autodetect_and_exit(uint8_t package_type, cmdopts_t *cmdopts)
 	handle->cmdopts = cmdopts;
 
 	if (cmdopts->pincheck) {
-		if (handle->version == MP_TL866IIPLUS) {
+		if (handle->version == MP_TL866IIPLUS ||
+		    handle->version == MP_T48) {
 			device_t device;
+			memset(&device, 0, sizeof(device));
 			device.pin_map = (package_type == 8 ? 0x01 : 0x03);
+			device.package_details.pin_count = package_type;
 			handle->device = &device;
 			if (minipro_pin_test(handle)) {
 				minipro_end_transaction(handle);
@@ -3540,6 +3543,7 @@ int main(int argc, char **argv)
 	/* Run a bad pin contact test if requested. */
 	if (cmdopts.pincheck) {
 		if ((handle->version == MP_TL866IIPLUS ||
+		     handle->version == MP_T48 ||
 		     handle->version == MP_T76) &&
 		    !cmdopts.icsp) {
 			if (minipro_pin_test(handle)) {

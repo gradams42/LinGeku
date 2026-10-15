@@ -30,7 +30,7 @@ Other targets:
 | Target | |
 |---|---|
 | `make lingecu-system` | Build without embedding minipro; uses `minipro` from `$PATH` |
-| `make update-minipro REF=<tag/branch/commit>` | Replace `third_party/minipro` with an upstream export (`REF` defaults to `master`) |
+| `make update-minipro REF=<tag/branch/commit>` | Replace `third_party/minipro` with an upstream export (`REF` defaults to `master`) and re-apply `third_party/patches/` |
 | `make test` | Unit tests plus a headless UI test against a fake `minipro` |
 | `make release` | Release tarballs for **linux amd64, arm64 and armhf**, cross-built in Docker (`ARCHES="arm64"` to pick) |
 
@@ -62,7 +62,8 @@ internal/
 ├── buffer/           buffer model, bin / Intel HEX / S-record I/O, checksums
 ├── project/          .lgp project files
 └── ui/               Fyne interface
-third_party/minipro/  vendored minipro source (commit recorded in UPSTREAM)
+third_party/minipro/  vendored minipro source (commit + applied patches in UPSTREAM)
+third_party/patches/  LinGecu's changes to minipro, re-applied by update-minipro
 scripts/              update-minipro.sh, build-release.sh
 .github/workflows/    release builds on tag push
 packaging/            .desktop file, cross/ (Docker cross-build)
@@ -89,6 +90,7 @@ packaging/            .desktop file, cross/ (Docker cross-build)
 | Auto program / mass production: step sequence, chip counter, pass/fail statistics, auto-start on chip insertion | ✔ Auto window |
 | Serial numbers (decimal/hex ASCII, LE/BE binary, BCD; step; persisted) | ✔ |
 | SPI 25xx auto-detect (8/16 pin), identify chip by ID | ✔ Device menu |
+| Pin detect: ZIF socket view showing good/bad contact per pin, checked before each operation | ✔ ZIF Socket / Pins tab (TL866II+ and T48) |
 | Programmer self-test, firmware update, connected-programmer detection | ✔ Tools menu |
 | Project files (device + options + buffers) | ✔ `.lgp` |
 | Large parts (NAND, eMMC, ≥256 MiB) | ✔ handled file-to-file |
@@ -96,6 +98,14 @@ packaging/            .desktop file, cross/ (Docker cross-build)
 Some things XGecu does depend on capabilities minipro doesn't have yet, such as NAND bad-block
 management schemes, VGA/HDMI EDID tools, and per-chip adapter pictures. LinGecu will expose these
 once minipro supports them.
+
+### Changes to minipro
+
+`third_party/patches/` holds LinGecu's changes to the vendored minipro:
+
+- `0001-t48-pin-contact-test.patch`: adds the bad-pin-contact test (`-z`) for the T48, which
+  upstream only implements for the TL866II+ and T76. It also initialises the device struct used
+  by the SPI auto-detect pin check.
 
 ## License
 

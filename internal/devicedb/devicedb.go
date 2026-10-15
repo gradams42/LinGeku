@@ -352,17 +352,25 @@ type Config struct {
 	Locks   []Setting
 }
 
+// PinMap lists, in 40-pin ZIF socket numbering, the pins tied to the chip's
+// ground and the pins checked by the bad-contact test.
+type PinMap struct {
+	GND  []int
+	Mask []int
+}
+
 // DB is a loaded device database.
 type DB struct {
 	Path    string
 	byDB    map[string][]*Device
 	configs map[string]*Config
+	maps    map[int]*PinMap
 	Logic   []*Device
 }
 
 // Load parses infoic.xml (and logicic.xml if logicPath is not empty).
 func Load(infoicPath, logicPath string) (*DB, error) {
-	db := &DB{Path: infoicPath, byDB: map[string][]*Device{}, configs: map[string]*Config{}}
+	db := &DB{Path: infoicPath, byDB: map[string][]*Device{}, configs: map[string]*Config{}, maps: map[int]*PinMap{}}
 	data, err := readStripped(infoicPath)
 	if err != nil {
 		return nil, err
@@ -423,6 +431,8 @@ func (db *DB) parseInfoic(r io.Reader) error {
 	var section string // "fuses" or "locks"
 	var settingName string
 	var text strings.Builder
+	var curMap *PinMap
+	inMapList := false
 	for {
 		tok, err := dec.Token()
 		if err == io.EOF {
@@ -486,13 +496,33 @@ func (db *DB) parseInfoic(r io.Reader) error {
 			case "fuse", "lock":
 				settingName = a["name"]
 				text.Reset()
+			case "map":
+				curMap = &PinMap{}
+				db.maps[int(num(a["index"]))] = curMap
+			case "gnd", "mask":
+				if curMap != nil {
+					inMapList = true
+					text.Reset()
+				}
 			}
 		case xml.CharData:
-			if settingName != "" {
+			if settingName != "" || inMapList {
 				text.Write(t)
 			}
 		case xml.EndElement:
 			switch t.Name.Local {
+			case "gnd", "mask":
+				if curMap != nil && inMapList {
+					pins := parsePinList(text.String())
+					if t.Name.Local == "gnd" {
+						curMap.GND = pins
+					} else {
+						curMap.Mask = pins
+					}
+				}
+				inMapList = false
+			case "map":
+				curMap = nil
 			case "fuse", "lock":
 				if cfg != nil && settingName != "" {
 					parts := strings.Split(text.String(), ",")
@@ -577,6 +607,74 @@ func (db *DB) parseLogic(r io.Reader) error {
 		}
 	}
 	return nil
+}
+
+func parsePinList(s string) []int {
+	var out []int
+	for _, f := range strings.Split(s, ",") {
+		if v := num(f); v > 0 {
+			out = append(out, int(v))
+		}
+	}
+	return out
+}
+
+// PinMapIndex is the device's pin map number (0 = no pin contact test).
+func (d *Device) PinMapIndex() int { return int(d.PinMap & 0xff) }
+
+// ZIFToDevicePin converts a 40-pin ZIF socket pin to the pin number of a
+// DIP chip with n pins inserted with pin 1 at the top-left of the socket.
+// It returns 0 for socket pins the chip does not occupy.
+func ZIFToDevicePin(zif, n int) int {
+	if n <= 0 || n > 40 {
+		return 0
+	}
+	switch {
+	case zif <= n/2:
+		return zif
+	case zif > 40-n/2:
+		return zif - (40 - n)
+	}
+	return 0
+}
+
+// DevicePinToZIF is the inverse of ZIFToDevicePin.
+func DevicePinToZIF(pin, n int) int {
+	if pin <= n/2 {
+		return pin
+	}
+	return pin + 40 - n
+}
+
+// PinRole classifies a chip pin for the contact test display.
+type PinRole int
+
+const (
+	PinUntested PinRole = iota // not checked by the contact test (e.g. VCC)
+	PinTested
+	PinGround
+)
+
+// PinRoles returns the role of each device pin (index 0 = pin 1), or nil
+// when the device has no pin map.
+func (db *DB) PinRoles(d *Device) []PinRole {
+	m := db.maps[d.PinMapIndex()]
+	n := d.PinCount()
+	if m == nil || d.PinMapIndex() == 0 || n == 0 || n > 40 {
+		return nil
+	}
+	roles := make([]PinRole, n)
+	for _, z := range m.Mask {
+		if p := ZIFToDevicePin(z, n); p > 0 {
+			roles[p-1] = PinTested
+		}
+	}
+	for _, z := range m.GND {
+		if p := ZIFToDevicePin(z, n); p > 0 {
+			roles[p-1] = PinGround
+		}
+	}
+	return roles
 }
 
 // Devices returns all chips usable on a programmer (memory chips plus logic ICs).
