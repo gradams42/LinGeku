@@ -240,3 +240,13 @@ func TestEndToEnd(t *testing.T) {
 		t.Fatalf("option state %v", state)
 	}
 }
+
+// Fyne panics if a file dialog is resized before it is shown.
+func TestFileDialogs(t *testing.T) {
+	fa := test.NewApp()
+	defer fa.Quit()
+	a := newApp(fa)
+	defer os.RemoveAll(a.tmpDir)
+	a.fileSaveDialog("Save buffer", "firmware.bin", func(string) {})
+	a.fileOpenDialog("Open file", func(string) {})
+}

@@ -606,8 +606,7 @@ func (a *App) fileOpenDialog(title string, cb func(path string)) {
 	}, a.win)
 	d.SetTitleText(title)
 	a.setDialogDir(d)
-	d.Resize(fyne.NewSize(900, 600))
-	d.Show()
+	showFileDialog(d)
 }
 
 func (a *App) fileSaveDialog(title, name string, cb func(path string)) {
@@ -622,8 +621,14 @@ func (a *App) fileSaveDialog(title, name string, cb func(path string)) {
 	d.SetTitleText(title)
 	d.SetFileName(name)
 	a.setDialogDir(d)
-	d.Resize(fyne.NewSize(900, 600))
+	showFileDialog(d)
+}
+
+// showFileDialog shows d at a usable size. Fyne 2.8 panics if a FileDialog
+// is resized before Show, because its window does not exist yet.
+func showFileDialog(d *dialog.FileDialog) {
 	d.Show()
+	d.Resize(fyne.NewSize(900, 600))
 }
 
 func (a *App) setDialogDir(d *dialog.FileDialog) {
